@@ -19,7 +19,6 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
 
     private List<Booking> bookingList;
 
-    // Interface so AdminBookingsActivity can handle status updates
     public interface OnStatusUpdateListener {
         void onUpdateStatus(Booking booking, int position);
     }
@@ -45,28 +44,30 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
 
         holder.tvServiceName.setText(booking.getServiceName());
         holder.tvCustomerName.setText("Customer: " + booking.getUserName());
-        holder.tvDate.setText("Date: " + booking.getBookingDate());
-        holder.tvTime.setText("Time: " + booking.getBookingTime());
+        holder.tvDate.setText(booking.getBookingDate());
+        holder.tvTime.setText(booking.getBookingTime());
         holder.tvStatus.setText(booking.getStatus());
 
-        // Colour the status badge
-        switch (booking.getStatus()) {
+        // Pick status colour
+        int statusColor;
+        switch (booking.getStatus().toLowerCase()) {
             case "confirmed":
-                holder.tvStatus.getBackground().setTint(Color.parseColor("#4CAF50")); // green
+                statusColor = Color.parseColor("#4CAF50"); // green
                 break;
             case "completed":
-                holder.tvStatus.getBackground().setTint(Color.parseColor("#9E9E9E")); // grey
+                statusColor = Color.parseColor("#9E9E9E"); // grey
                 break;
-            default: // pending
-                holder.tvStatus.getBackground().setTint(Color.parseColor("#FF9800")); // orange
+            default:                                        // pending
+                statusColor = Color.parseColor("#FF9800"); // orange
                 break;
         }
 
-        // Pass click to activity to show status options dialog
+        // Apply colour to badge and top strip
+        holder.tvStatus.getBackground().setTint(statusColor);
+        holder.vStatusStrip.setBackgroundColor(statusColor);
+
         holder.btnUpdateStatus.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onUpdateStatus(booking, position);
-            }
+            if (listener != null) listener.onUpdateStatus(booking, position);
         });
     }
 
@@ -75,17 +76,18 @@ public class AdminBookingAdapter extends RecyclerView.Adapter<AdminBookingAdapte
         return bookingList.size();
     }
 
-    // Update a single item after status change
     public void updateItem(int position) {
         notifyItemChanged(position);
     }
 
     public static class AdminBookingViewHolder extends RecyclerView.ViewHolder {
+        View vStatusStrip;
         TextView tvServiceName, tvCustomerName, tvDate, tvTime, tvStatus;
         Button btnUpdateStatus;
 
         public AdminBookingViewHolder(@NonNull View itemView) {
             super(itemView);
+            vStatusStrip   = itemView.findViewById(R.id.vAdminStatusStrip);
             tvServiceName  = itemView.findViewById(R.id.tvServiceName);
             tvCustomerName = itemView.findViewById(R.id.tvCustomerName);
             tvDate         = itemView.findViewById(R.id.tvDate);

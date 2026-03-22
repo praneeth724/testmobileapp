@@ -35,22 +35,33 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
         Booking booking = bookingList.get(position);
 
         holder.tvServiceName.setText(booking.getServiceName());
-        holder.tvDate.setText("Date: " + booking.getBookingDate());
-        holder.tvTime.setText("Time: " + booking.getBookingTime());
+        holder.tvDate.setText(booking.getBookingDate());
+        holder.tvTime.setText(booking.getBookingTime());
         holder.tvStatus.setText(booking.getStatus());
 
-        // Change badge colour based on booking status
-        switch (booking.getStatus()) {
+        // Show location row if we have one
+        if (booking.getLocationName() != null && !booking.getLocationName().isEmpty()) {
+            holder.layoutLocation.setVisibility(View.VISIBLE);
+            holder.tvLocation.setText(booking.getLocationName());
+        } else {
+            holder.layoutLocation.setVisibility(View.GONE);
+        }
+
+        // Colour the status badge AND the top status strip to match booking status
+        int statusColor;
+        switch (booking.getStatus().toLowerCase()) {
             case "confirmed":
-                holder.tvStatus.getBackground().setTint(Color.parseColor("#4CAF50")); // green
+                statusColor = Color.parseColor("#4CAF50"); // green
                 break;
             case "completed":
-                holder.tvStatus.getBackground().setTint(Color.parseColor("#9E9E9E")); // grey
+                statusColor = Color.parseColor("#9E9E9E"); // grey
                 break;
-            default: // pending
-                holder.tvStatus.getBackground().setTint(Color.parseColor("#FF9800")); // orange
+            default:                                        // pending
+                statusColor = Color.parseColor("#FF9800"); // orange
                 break;
         }
+        holder.tvStatus.getBackground().setTint(statusColor);
+        holder.vStatusStrip.setBackgroundColor(statusColor);
     }
 
     @Override
@@ -59,14 +70,19 @@ public class BookingAdapter extends RecyclerView.Adapter<BookingAdapter.BookingV
     }
 
     public static class BookingViewHolder extends RecyclerView.ViewHolder {
-        TextView tvServiceName, tvDate, tvTime, tvStatus;
+        View vStatusStrip;
+        View layoutLocation;
+        TextView tvServiceName, tvDate, tvTime, tvStatus, tvLocation;
 
         public BookingViewHolder(@NonNull View itemView) {
             super(itemView);
+            vStatusStrip  = itemView.findViewById(R.id.vStatusStrip);
             tvServiceName = itemView.findViewById(R.id.tvBookingServiceName);
             tvDate        = itemView.findViewById(R.id.tvBookingDate);
             tvTime        = itemView.findViewById(R.id.tvBookingTime);
             tvStatus      = itemView.findViewById(R.id.tvStatus);
+            layoutLocation = itemView.findViewById(R.id.layoutLocation);
+            tvLocation    = itemView.findViewById(R.id.tvBookingLocation);
         }
     }
 }

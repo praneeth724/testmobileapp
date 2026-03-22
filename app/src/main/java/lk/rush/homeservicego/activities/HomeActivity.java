@@ -3,6 +3,7 @@ package lk.rush.homeservicego.activities;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -16,6 +17,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private MaterialCardView cardCleaning, cardPlumbing, cardElectrical, cardAppliance;
     private Button btnLogout, btnViewBookings, btnProfile;
+    private TextView tvTitle;
 
     private SessionManager sessionManager;
 
@@ -24,33 +26,37 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-        cardCleaning = findViewById(R.id.cardCleaning);
-        cardPlumbing = findViewById(R.id.cardPlumbing);
+        cardCleaning   = findViewById(R.id.cardCleaning);
+        cardPlumbing   = findViewById(R.id.cardPlumbing);
         cardElectrical = findViewById(R.id.cardElectrical);
-        cardAppliance = findViewById(R.id.cardAppliance);
-        btnLogout       = findViewById(R.id.btnLogout);
+        cardAppliance  = findViewById(R.id.cardAppliance);
+        btnLogout      = findViewById(R.id.btnLogout);
         btnViewBookings = findViewById(R.id.btnViewBookings);
-        btnProfile      = findViewById(R.id.btnProfile);
+        btnProfile     = findViewById(R.id.btnProfile);
+        tvTitle        = findViewById(R.id.tvTitle);
 
         sessionManager = new SessionManager(this);
+
+        // Show user's first name in the header
+        String fullName = sessionManager.getUserName();
+        if (fullName != null && !fullName.isEmpty()) {
+            // Use only the first name for a friendly greeting
+            String firstName = fullName.split(" ")[0];
+            tvTitle.setText("Hi, " + firstName + "!");
+        }
 
         cardCleaning.setOnClickListener(v -> openServiceList("Cleaning"));
         cardPlumbing.setOnClickListener(v -> openServiceList("Plumbing"));
         cardElectrical.setOnClickListener(v -> openServiceList("Electrical"));
         cardAppliance.setOnClickListener(v -> openServiceList("Appliance Repair"));
 
-        // Open booking history screen
-        btnViewBookings.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, BookingHistoryActivity.class));
-        });
+        btnViewBookings.setOnClickListener(v ->
+                startActivity(new Intent(HomeActivity.this, BookingHistoryActivity.class)));
 
-        // Open profile screen
-        btnProfile.setOnClickListener(v -> {
-            startActivity(new Intent(HomeActivity.this, ProfileActivity.class));
-        });
+        btnProfile.setOnClickListener(v ->
+                startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
 
         btnLogout.setOnClickListener(v -> {
-            // Sign out from Firebase Auth and clear local session
             FirebaseAuth.getInstance().signOut();
             sessionManager.logoutUser();
             Intent intent = new Intent(HomeActivity.this, LoginActivity.class);

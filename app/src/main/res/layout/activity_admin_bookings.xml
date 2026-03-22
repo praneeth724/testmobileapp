@@ -5,28 +5,31 @@
     android:orientation="vertical"
     android:background="@color/backgroundColor">
 
-    <!-- Header -->
+    <!-- Gradient Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/gradient_admin_header"
         android:orientation="vertical"
-        android:padding="20dp"
-        android:background="@color/primaryColor">
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="44dp"
+        android:paddingBottom="28dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="All Bookings"
+            android:textColor="#FFFFFF"
             android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF" />
+            android:textStyle="bold" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Manage customer bookings"
-            android:textSize="14sp"
-            android:textColor="#CCFFFFFF"
+            android:text="Manage customer booking requests"
+            android:textColor="#B3E5FC"
+            android:textSize="13sp"
             android:layout_marginTop="4dp" />
     </LinearLayout>
 
@@ -42,12 +45,13 @@
     <!-- Empty state -->
     <TextView
         android:id="@+id/tvEmpty"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="100dp"
+        android:gravity="center"
         android:text="No bookings yet"
-        android:textSize="16sp"
+        android:textSize="17sp"
+        android:textStyle="bold"
         android:textColor="@color/textColorSecondary"
         android:visibility="gone" />
 

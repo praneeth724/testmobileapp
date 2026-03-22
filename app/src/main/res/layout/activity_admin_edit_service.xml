@@ -20,7 +20,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add New Service"
+            android:text="Edit Service"
             android:textColor="#FFFFFF"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -29,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Fill in the details below"
+            android:text="Update the service details below"
             android:textColor="#B3E5FC"
             android:textSize="13sp" />
     </LinearLayout>
@@ -216,7 +216,7 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:text="Pick Image from Gallery"
+                android:text="Change Image"
                 android:textAllCaps="false"
                 android:textColor="@color/primaryColor"
                 android:textSize="15sp"
@@ -226,7 +226,7 @@
                 app:strokeColor="@color/primaryColor"
                 app:strokeWidth="1.5dp" />
 
-            <!-- ── Location Section ── -->
+            <!-- Location Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -240,7 +240,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Search and select the place on Google Maps"
+                android:text="Tap below to change the location"
                 android:textSize="12sp"
                 android:textColor="@color/textColorHint"
                 android:layout_marginBottom="12dp" />
@@ -251,7 +251,7 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:text="Search Location on Map"
+                android:text="Change Location on Map"
                 android:textAllCaps="false"
                 android:textColor="@color/primaryColor"
                 android:textSize="15sp"
@@ -261,7 +261,7 @@
                 app:strokeColor="@color/primaryColor"
                 app:strokeWidth="1.5dp" />
 
-            <!-- Selected place name shown here -->
+            <!-- Current / selected location card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardLocation"
                 android:layout_width="match_parent"
@@ -306,13 +306,13 @@
                 android:visibility="gone"
                 android:layout_marginBottom="8dp" />
 
-            <!-- Save Button -->
+            <!-- Update Button -->
             <Button
-                android:id="@+id/btnSaveService"
+                android:id="@+id/btnUpdateService"
                 android:layout_width="match_parent"
                 android:layout_height="54dp"
                 android:background="@drawable/btn_primary"
-                android:text="Save Service"
+                android:text="Update Service"
                 android:textAllCaps="false"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"

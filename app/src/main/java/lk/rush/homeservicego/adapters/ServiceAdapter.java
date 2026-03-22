@@ -1,12 +1,16 @@
 package lk.rush.homeservicego.adapters;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 
 import java.util.List;
 
@@ -17,7 +21,6 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
 
     private List<Service> serviceList;
 
-    // Interface so ServiceListActivity can handle item clicks
     public interface OnServiceClickListener {
         void onServiceClick(Service service);
     }
@@ -43,9 +46,20 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
 
         holder.tvName.setText(service.getName());
         holder.tvDescription.setText(service.getDescription());
-        holder.tvPrice.setText("Rs. " + service.getPrice());
+        holder.tvPrice.setText("Rs. " + (long) service.getPrice());
 
-        // Open ServiceDetailActivity when user taps a service card
+        // Show image banner if service has one, hide otherwise
+        if (service.getImageUrl() != null && !service.getImageUrl().isEmpty()) {
+            holder.imgBanner.setVisibility(View.VISIBLE);
+            Glide.with(holder.itemView.getContext())
+                    .load(service.getImageUrl())
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .centerCrop()
+                    .into(holder.imgBanner);
+        } else {
+            holder.imgBanner.setVisibility(View.GONE);
+        }
+
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onServiceClick(service);
         });
@@ -58,14 +72,15 @@ public class ServiceAdapter extends RecyclerView.Adapter<ServiceAdapter.ServiceV
 
     public static class ServiceViewHolder extends RecyclerView.ViewHolder {
 
+        ImageView imgBanner;
         TextView tvName, tvDescription, tvPrice;
 
         public ServiceViewHolder(@NonNull View itemView) {
             super(itemView);
-
-            tvName = itemView.findViewById(R.id.tvServiceName);
+            imgBanner     = itemView.findViewById(R.id.imgServiceBanner);
+            tvName        = itemView.findViewById(R.id.tvServiceName);
             tvDescription = itemView.findViewById(R.id.tvServiceDescription);
-            tvPrice = itemView.findViewById(R.id.tvServicePrice);
+            tvPrice       = itemView.findViewById(R.id.tvServicePrice);
         }
     }
 }

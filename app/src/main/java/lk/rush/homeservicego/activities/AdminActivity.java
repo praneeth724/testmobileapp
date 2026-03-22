@@ -2,11 +2,11 @@ package lk.rush.homeservicego.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -17,7 +17,7 @@ public class AdminActivity extends AppCompatActivity {
 
     private TextView tvAdminWelcome;
     private MaterialCardView cardViewBookings, cardManageServices, cardAddService;
-    private Button btnAdminLogout;
+    private MaterialButton btnAdminLogout;
 
     private SessionManager sessionManager;
 
@@ -34,8 +34,13 @@ public class AdminActivity extends AppCompatActivity {
         cardAddService       = findViewById(R.id.cardAddService);
         btnAdminLogout       = findViewById(R.id.btnAdminLogout);
 
-        // Show admin's name from saved session
-        tvAdminWelcome.setText("Welcome, " + sessionManager.getUserName());
+        // Show admin's name — fall back to "Admin" if name is not saved
+        String adminName = sessionManager.getUserName();
+        if (adminName != null && !adminName.isEmpty()) {
+            tvAdminWelcome.setText("Welcome, " + adminName.split(" ")[0] + "!");
+        } else {
+            tvAdminWelcome.setText("Welcome, Admin!");
+        }
 
         // View all customer bookings + update their status
         cardViewBookings.setOnClickListener(v ->

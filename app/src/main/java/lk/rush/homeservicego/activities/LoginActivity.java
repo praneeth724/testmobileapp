@@ -2,8 +2,10 @@ package lk.rush.homeservicego.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -13,6 +15,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -22,14 +25,13 @@ import lk.rush.homeservicego.utils.SessionManager;
 
 public class LoginActivity extends AppCompatActivity {
 
+    private TextInputLayout tilEmail, tilPassword;
     private EditText etEmail, etPassword;
     private Button btnLogin;
     private TextView tvRegister;
     private ProgressBar progressBar;
 
-    // Firebase Auth for secure login
     private FirebaseAuth mAuth;
-    // Firestore to fetch user profile (name, role) after login
     private FirebaseFirestore fs;
     private SessionManager sessionManager;
 
@@ -38,6 +40,9 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
+        // Bind views
+        tilEmail    = findViewById(R.id.tilEmail);
+        tilPassword = findViewById(R.id.tilPassword);
         etEmail     = findViewById(R.id.etEmail);
         etPassword  = findViewById(R.id.etPassword);
         btnLogin    = findViewById(R.id.btnLogin);
@@ -48,61 +53,78 @@ public class LoginActivity extends AppCompatActivity {
         fs             = FirebaseFirestore.getInstance();
         sessionManager = new SessionManager(this);
 
+        // Clear error as user types in each field
+        clearErrorOnType(etEmail,    tilEmail);
+        clearErrorOnType(etPassword, tilPassword);
+
         btnLogin.setOnClickListener(v -> loginUser());
 
-        tvRegister.setOnClickListener(v -> {
-            startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
-        });
+        tvRegister.setOnClickListener(v ->
+                startActivity(new Intent(LoginActivity.this, RegisterActivity.class)));
     }
 
+    // ── Validation ────────────────────────────────────────────────────────
+    private boolean validateInputs(String email, String password) {
+        // Reset all errors first
+        tilEmail.setError(null);
+        tilPassword.setError(null);
+
+        boolean valid = true;
+
+        // Email checks
+        if (email.isEmpty()) {
+            tilEmail.setError("Email is required");
+            if (valid) etEmail.requestFocus();
+            valid = false;
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            tilEmail.setError("Enter a valid email  (e.g. user@gmail.com)");
+            if (valid) etEmail.requestFocus();
+            valid = false;
+        }
+
+        // Password checks
+        if (password.isEmpty()) {
+            tilPassword.setError("Password is required");
+            if (valid) etPassword.requestFocus();
+            valid = false;
+        } else if (password.length() < 6) {
+            tilPassword.setError("Password must be at least 6 characters");
+            if (valid) etPassword.requestFocus();
+            valid = false;
+        }
+
+        return valid;
+    }
+
+    // ── Login ──────────────────────────────────────────────────────────────
     private void loginUser() {
         String email    = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        // Validate inputs
-        if (TextUtils.isEmpty(email)) {
-            etEmail.setError("Enter your email");
-            etEmail.requestFocus();
-            return;
-        }
-        if (TextUtils.isEmpty(password)) {
-            etPassword.setError("Enter your password");
-            etPassword.requestFocus();
-            return;
-        }
+        // Stop if validation fails
+        if (!validateInputs(email, password)) return;
 
-        // Show loading
         progressBar.setVisibility(View.VISIBLE);
         btnLogin.setEnabled(false);
 
         // Step 1: Sign in with Firebase Authentication
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnSuccessListener(authResult -> {
-
-                    // Get the UID of the logged-in user
                     String userId = authResult.getUser().getUid();
 
-                    // Step 2: Fetch user profile from Firestore using the UID
-                    fs.collection("users").document(userId)
-                            .get()
-                            .addOnSuccessListener((DocumentSnapshot document) -> {
+                    // Step 2: Fetch user profile from Firestore
+                    fs.collection("users").document(userId).get()
+                            .addOnSuccessListener((DocumentSnapshot doc) -> {
                                 progressBar.setVisibility(View.GONE);
 
-                                if (document.exists()) {
-                                    // Read profile fields
-                                    String name = document.getString("name");
-                                    String role = document.getString("role");
-
-                                    // Safety: if role is missing in Firestore, default to customer
+                                if (doc.exists()) {
+                                    String name = doc.getString("name");
+                                    String role = doc.getString("role");
                                     if (role == null) role = "customer";
 
-                                    // Save session locally
                                     sessionManager.createLoginSession(userId, name, email, role);
+                                    Log.d("LOGIN", "Logged in: " + name + " | Role: " + role);
 
-                                    Log.d("LOGIN", "Logged in: " + name + " | Role: [" + role + "]");
-
-                                    // Route based on role — using equalsIgnoreCase so
-                                    // "Admin", "ADMIN", "admin" all work correctly
                                     Intent intent;
                                     if (role.equalsIgnoreCase("admin")) {
                                         Toast.makeText(this, "Welcome Admin, " + name + "!", Toast.LENGTH_SHORT).show();
@@ -114,29 +136,36 @@ public class LoginActivity extends AppCompatActivity {
                                     startActivity(intent);
                                     finish();
                                 } else {
-                                    // Firebase Auth succeeded but Firestore document is missing
-                                    // This means the admin profile was not created in Firestore
                                     progressBar.setVisibility(View.GONE);
                                     btnLogin.setEnabled(true);
                                     Toast.makeText(this,
-                                            "Profile not found for UID: " + userId + "\nPlease create it in Firestore.",
+                                            "Profile not found. Please contact support.",
                                             Toast.LENGTH_LONG).show();
-                                    Log.e("LOGIN", "No Firestore doc for userId: " + userId);
                                 }
                             })
                             .addOnFailureListener(e -> {
                                 progressBar.setVisibility(View.GONE);
                                 btnLogin.setEnabled(true);
                                 Toast.makeText(this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                                Log.e("LOGIN", "Firestore error", e);
                             });
                 })
                 .addOnFailureListener(e -> {
-                    // Wrong email or password
                     progressBar.setVisibility(View.GONE);
                     btnLogin.setEnabled(true);
-                    Toast.makeText(this, "Invalid email or password", Toast.LENGTH_SHORT).show();
+                    // Show error under the email field for wrong credentials
+                    tilPassword.setError("Invalid email or password");
                     Log.e("LOGIN", "Auth error", e);
                 });
+    }
+
+    // ── Helper: clear error when user starts typing ───────────────────────
+    private void clearErrorOnType(EditText editText, TextInputLayout layout) {
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void afterTextChanged(Editable s) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                layout.setError(null);
+            }
+        });
     }
 }

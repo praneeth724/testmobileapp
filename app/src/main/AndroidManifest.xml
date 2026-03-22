@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <!-- For push notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- For picking images from gallery (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
         android:allowBackup="true"
@@ -59,6 +61,7 @@
         <activity android:name=".activities.AdminBookingsActivity" />
         <activity android:name=".activities.AdminManageServicesActivity" />
         <activity android:name=".activities.AdminAddServiceActivity" />
+        <activity android:name=".activities.AdminEditServiceActivity" />
 
         <!-- ===== LEGACY ===== -->
         <activity android:name=".MainActivity" android:exported="true" />

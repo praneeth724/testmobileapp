@@ -44,28 +44,30 @@ import java.util.Locale;
 import java.util.UUID;
 
 import lk.rush.homeservicego.R;
+import lk.rush.homeservicego.models.Service;
 
-public class AdminAddServiceActivity extends AppCompatActivity {
+public class AdminEditServiceActivity extends AppCompatActivity {
 
     // ── Cloudinary Config ──────────────────────────────────────────────────
+    @SuppressWarnings("SpellCheckingInspection")
     private static final String CLOUDINARY_CLOUD_NAME    = "dvvrgpo5q";
     private static final String CLOUDINARY_UPLOAD_PRESET = "HomeServiceGo";
     // ──────────────────────────────────────────────────────────────────────
 
     private EditText etServiceName, etDescription, etPrice, etProviderPhone;
     private Spinner spinnerCategory;
-    private View btnSaveService, btnPickLocation, btnPickImage;
+    private View btnUpdateService;
     private TextView tvSelectedLocation;
     private View cardLocation;
     private ProgressBar progressBar;
     private ImageView imgServicePreview;
 
     private FirebaseFirestore db;
+    private Service existingService;
     private Uri selectedImageUri = null;
 
-    private double selectedLat = 6.9271;
-    private double selectedLng = 79.8612;
-    private boolean locationPicked = false;
+    private double selectedLat;
+    private double selectedLng;
 
     private ActivityResultLauncher<String> imagePickerLauncher;
 
@@ -79,11 +81,18 @@ public class AdminAddServiceActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_admin_add_service);
+        setContentView(R.layout.activity_admin_edit_service);
 
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Add New Service");
+            getSupportActionBar().setTitle("Edit Service");
+        }
+
+        existingService = (Service) getIntent().getSerializableExtra("service");
+        if (existingService == null) {
+            Toast.makeText(this, "Service not found", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
         db = FirebaseFirestore.getInstance();
@@ -93,12 +102,12 @@ public class AdminAddServiceActivity extends AppCompatActivity {
         etPrice            = findViewById(R.id.etPrice);
         etProviderPhone    = findViewById(R.id.etProviderPhone);
         spinnerCategory    = findViewById(R.id.spinnerCategory);
-        btnSaveService     = findViewById(R.id.btnSaveService);
-        btnPickLocation    = findViewById(R.id.btnPickLocation);
+        btnUpdateService   = findViewById(R.id.btnUpdateService);
+        View btnPickLocation = findViewById(R.id.btnPickLocation);
         tvSelectedLocation = findViewById(R.id.tvSelectedLocation);
         cardLocation       = findViewById(R.id.cardLocation);
         progressBar        = findViewById(R.id.progressBar);
-        btnPickImage       = findViewById(R.id.btnPickImage);
+        View btnPickImage  = findViewById(R.id.btnPickImage);
         imgServicePreview  = findViewById(R.id.imgServicePreview);
 
         ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(
@@ -106,7 +115,9 @@ public class AdminAddServiceActivity extends AppCompatActivity {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCategory.setAdapter(spinnerAdapter);
 
-        // Image picker — opens gallery
+        preFillFields();
+
+        // Image picker
         imagePickerLauncher = registerForActivityResult(
                 new ActivityResultContracts.GetContent(),
                 uri -> {
@@ -119,10 +130,42 @@ public class AdminAddServiceActivity extends AppCompatActivity {
 
         btnPickImage.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
         btnPickLocation.setOnClickListener(v -> openLocationSearch());
-        btnSaveService.setOnClickListener(v -> saveService());
+        btnUpdateService.setOnClickListener(v -> updateService());
     }
 
-    // ── Location search using Geocoder (no API billing needed) ────────────
+    private void preFillFields() {
+        etServiceName.setText(existingService.getName());
+        etDescription.setText(existingService.getDescription());
+        etPrice.setText(String.valueOf(existingService.getPrice()));
+        etProviderPhone.setText(existingService.getProviderPhone());
+
+        for (int i = 0; i < categories.length; i++) {
+            if (categories[i].equalsIgnoreCase(existingService.getCategory())) {
+                spinnerCategory.setSelection(i);
+                break;
+            }
+        }
+
+        selectedLat = existingService.getLatitude();
+        selectedLng = existingService.getLongitude();
+        String locationLabel = existingService.getName() + " — current location";
+        tvSelectedLocation.setText(locationLabel);
+        cardLocation.setVisibility(View.VISIBLE);
+
+        if (existingService.getImageUrl() != null && !existingService.getImageUrl().isEmpty()) {
+            imgServicePreview.setVisibility(View.VISIBLE);
+            imgServicePreview.setImageResource(android.R.drawable.ic_menu_gallery);
+            new Thread(() -> {
+                try {
+                    java.net.URL imgUrl = new java.net.URL(existingService.getImageUrl());
+                    Bitmap bitmap = BitmapFactory.decodeStream(imgUrl.openStream());
+                    runOnUiThread(() -> imgServicePreview.setImageBitmap(bitmap));
+                } catch (Exception ignored) {}
+            }).start();
+        }
+    }
+
+    // ── Location search ───────────────────────────────────────────────────
     private void openLocationSearch() {
         int dp = (int) getResources().getDisplayMetrics().density;
 
@@ -159,7 +202,7 @@ public class AdminAddServiceActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (searchRunnable != null) searchHandler.removeCallbacks(searchRunnable);
 
-                // Convert to String immediately so the value is safely captured
+                // Capture as String immediately
                 final String query = s.toString().trim();
 
                 if (query.length() < 2) {
@@ -176,16 +219,14 @@ public class AdminAddServiceActivity extends AppCompatActivity {
         resultsList.setOnItemClickListener((parent, view, position, id) -> {
             if (position >= addressList.size()) return;
             Address address = addressList.get(position);
-            selectedLat    = address.getLatitude();
-            selectedLng    = address.getLongitude();
-            locationPicked = true;
+            selectedLat = address.getLatitude();
+            selectedLng = address.getLongitude();
             tvSelectedLocation.setText(address.getAddressLine(0));
             cardLocation.setVisibility(View.VISIBLE);
             dialog.dismiss();
         });
     }
 
-    // Runs Geocoder in a background thread, then updates list on UI thread
     private void searchLocations(String query, ArrayAdapter<String> adapter) {
         new Thread(() -> {
             try {
@@ -193,12 +234,10 @@ public class AdminAddServiceActivity extends AppCompatActivity {
                 List<Address> results;
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    // New async API for Android 13+
                     final List<Address> temp = new ArrayList<>();
                     geocoder.getFromLocationName(query, 6, temp::addAll);
                     results = temp;
                 } else {
-                    // Sync API for older Android versions
                     results = geocoder.getFromLocationName(query, 6);
                 }
 
@@ -214,8 +253,8 @@ public class AdminAddServiceActivity extends AppCompatActivity {
         }).start();
     }
 
-    // ── Save ──────────────────────────────────────────────────────────────
-    private void saveService() {
+    // ── Update ────────────────────────────────────────────────────────────
+    private void updateService() {
         String name     = etServiceName.getText().toString().trim();
         String category = spinnerCategory.getSelectedItem().toString();
         String desc     = etDescription.getText().toString().trim();
@@ -231,31 +270,28 @@ public class AdminAddServiceActivity extends AppCompatActivity {
         try { price = Double.parseDouble(priceStr); }
         catch (NumberFormatException e) { etPrice.setError("Enter a valid number"); etPrice.requestFocus(); return; }
 
-        String locationLabel = locationPicked
-                ? tvSelectedLocation.getText().toString()
-                : "Colombo, Sri Lanka (default)";
-
         progressBar.setVisibility(View.VISIBLE);
-        btnSaveService.setEnabled(false);
+        btnUpdateService.setEnabled(false);
 
         if (selectedImageUri != null) {
             uploadImageToCloudinary(selectedImageUri,
-                    imageUrl -> saveToFirestore(name, category, desc, price, phone, locationLabel, imageUrl),
+                    imageUrl -> saveToFirestore(name, category, desc, price, phone, imageUrl),
                     error -> {
                         progressBar.setVisibility(View.GONE);
-                        btnSaveService.setEnabled(true);
+                        btnUpdateService.setEnabled(true);
                         Toast.makeText(this, "Image upload failed: " + error, Toast.LENGTH_LONG).show();
                     });
         } else {
-            saveToFirestore(name, category, desc, price, phone, locationLabel, "");
+            String existingUrl = existingService.getImageUrl() != null ? existingService.getImageUrl() : "";
+            saveToFirestore(name, category, desc, price, phone, existingUrl);
         }
     }
 
     // ── Upload to Cloudinary ──────────────────────────────────────────────
+    @SuppressWarnings("SpellCheckingInspection")
     private void uploadImageToCloudinary(Uri imageUri, OnSuccess onSuccess, OnFailure onFailure) {
         new Thread(() -> {
             try {
-                // Read and resize image
                 InputStream inputStream = getContentResolver().openInputStream(imageUri);
                 Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
                 if (bitmap == null) { runOnUiThread(() -> onFailure.run("Could not read image")); return; }
@@ -271,7 +307,6 @@ public class AdminAddServiceActivity extends AppCompatActivity {
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 75, baos);
                 byte[] imageData = baos.toByteArray();
 
-                // Multipart POST to Cloudinary
                 String boundary = "Boundary" + UUID.randomUUID().toString().replace("-", "");
                 URL url = new URL("https://api.cloudinary.com/v1_1/" + CLOUDINARY_CLOUD_NAME + "/image/upload");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -282,11 +317,9 @@ public class AdminAddServiceActivity extends AppCompatActivity {
                 conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 
                 DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
-                // upload_preset field
                 dos.writeBytes("--" + boundary + "\r\n");
                 dos.writeBytes("Content-Disposition: form-data; name=\"upload_preset\"\r\n\r\n");
                 dos.writeBytes(CLOUDINARY_UPLOAD_PRESET + "\r\n");
-                // image file
                 dos.writeBytes("--" + boundary + "\r\n");
                 dos.writeBytes("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n");
                 dos.writeBytes("Content-Type: image/jpeg\r\n\r\n");
@@ -303,7 +336,6 @@ public class AdminAddServiceActivity extends AppCompatActivity {
                 while ((line = reader.readLine()) != null) sb.append(line);
                 String response = sb.toString();
 
-                // Parse secure_url from response JSON
                 int urlStart = response.indexOf("\"secure_url\":\"") + 14;
                 int urlEnd   = response.indexOf("\"", urlStart);
                 if (urlStart > 13 && urlEnd > urlStart) {
@@ -318,31 +350,29 @@ public class AdminAddServiceActivity extends AppCompatActivity {
         }).start();
     }
 
-    // ── Save to Firestore ─────────────────────────────────────────────────
     private void saveToFirestore(String name, String category, String desc, double price,
-                                  String phone, String locationLabel, String imageUrl) {
-        HashMap<String, Object> data = new HashMap<>();
-        data.put("name",          name);
-        data.put("category",      category);
-        data.put("description",   desc);
-        data.put("price",         price);
-        data.put("providerPhone", phone);
-        data.put("latitude",      selectedLat);
-        data.put("longitude",     selectedLng);
-        data.put("locationName",  locationLabel);
-        data.put("imageUrl",      imageUrl);
+                                  String phone, String imageUrl) {
+        HashMap<String, Object> updates = new HashMap<>();
+        updates.put("name",          name);
+        updates.put("category",      category);
+        updates.put("description",   desc);
+        updates.put("price",         price);
+        updates.put("providerPhone", phone);
+        updates.put("latitude",      selectedLat);
+        updates.put("longitude",     selectedLng);
+        updates.put("imageUrl",      imageUrl);
 
-        db.collection("services").add(data)
-                .addOnSuccessListener(ref -> {
-                    ref.update("serviceId", ref.getId());
+        db.collection("services").document(existingService.getServiceId())
+                .update(updates)
+                .addOnSuccessListener(unused -> {
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(this, "Service added successfully!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Service updated successfully!", Toast.LENGTH_SHORT).show();
                     finish();
                 })
                 .addOnFailureListener(e -> {
                     progressBar.setVisibility(View.GONE);
-                    btnSaveService.setEnabled(true);
-                    Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    btnUpdateService.setEnabled(true);
+                    Toast.makeText(this, "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 

@@ -44,29 +44,39 @@ public class AdminManageServicesActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
 
-        rvServices      = findViewById(R.id.rvServices);
-        progressBar     = findViewById(R.id.progressBar);
-        tvEmpty         = findViewById(R.id.tvEmpty);
+        rvServices       = findViewById(R.id.rvServices);
+        progressBar      = findViewById(R.id.progressBar);
+        tvEmpty          = findViewById(R.id.tvEmpty);
         btnAddNewService = findViewById(R.id.btnAddNewService);
 
         serviceList = new ArrayList<>();
 
-        // When delete is tapped, show confirmation dialog
-        adapter = new AdminServiceAdapter(serviceList, (service, position) -> {
-            showDeleteDialog(service, position);
+        // Adapter now handles both Edit and Delete
+        adapter = new AdminServiceAdapter(serviceList, new AdminServiceAdapter.OnActionListener() {
+            @Override
+            public void onEdit(Service service, int position) {
+                // Open Edit screen with the selected service
+                Intent intent = new Intent(AdminManageServicesActivity.this, AdminEditServiceActivity.class);
+                intent.putExtra("service", service);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onDelete(Service service, int position) {
+                showDeleteDialog(service, position);
+            }
         });
 
         rvServices.setLayoutManager(new LinearLayoutManager(this));
         rvServices.setAdapter(adapter);
 
-        btnAddNewService.setOnClickListener(v -> {
-            startActivity(new Intent(this, AdminAddServiceActivity.class));
-        });
+        btnAddNewService.setOnClickListener(v ->
+                startActivity(new Intent(this, AdminAddServiceActivity.class)));
 
         loadServices();
     }
 
-    // Reload when coming back from Add Service screen
+    // Reload list every time we come back (after Add or Edit)
     @Override
     protected void onResume() {
         super.onResume();
@@ -77,7 +87,6 @@ public class AdminManageServicesActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
         tvEmpty.setVisibility(View.GONE);
 
-        // Load ALL services from Firestore
         db.collection("services")
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
@@ -101,14 +110,11 @@ public class AdminManageServicesActivity extends AppCompatActivity {
                 });
     }
 
-    // Confirm before deleting
     private void showDeleteDialog(Service service, int position) {
         new AlertDialog.Builder(this)
                 .setTitle("Delete Service")
                 .setMessage("Are you sure you want to delete \"" + service.getName() + "\"?")
-                .setPositiveButton("Delete", (dialog, which) -> {
-                    deleteService(service, position);
-                })
+                .setPositiveButton("Delete", (dialog, which) -> deleteService(service, position))
                 .setNegativeButton("Cancel", null)
                 .show();
     }
@@ -117,16 +123,14 @@ public class AdminManageServicesActivity extends AppCompatActivity {
         db.collection("services").document(service.getServiceId())
                 .delete()
                 .addOnSuccessListener(unused -> {
-                    adapter.removeItem(position); // Remove from list instantly
+                    adapter.removeItem(position);
                     Toast.makeText(this, "Service deleted", Toast.LENGTH_SHORT).show();
-
                     if (serviceList.isEmpty()) {
                         tvEmpty.setVisibility(View.VISIBLE);
                     }
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Failed to delete: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e ->
+                        Toast.makeText(this, "Failed to delete: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     @Override

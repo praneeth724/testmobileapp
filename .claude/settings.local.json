@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew assembleDebug)"
+      "Bash(./gradlew assembleDebug)",
+      "Bash(node -e \"const docx = require\\(''''docx''''\\); console.log\\(Object.keys\\(docx\\).slice\\(0, 50\\).join\\(''''\\\\n''''\\)\\);\")",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(node -e \"require\\(''''docx''''\\)\")",
+      "Bash(node -e \"const docx = require\\(''docx''\\); console.log\\(''OK'', Object.keys\\(docx\\).slice\\(0,5\\).join\\('',''\\)\\);\")",
+      "Bash(npm root:*)",
+      "Bash(NODE_PATH=\"C:\\\\Users\\\\MSI BRAVO\\\\AppData\\\\Roaming\\\\npm\\\\node_modules\" node -e \"const docx = require\\(''docx''\\); console.log\\(''OK'', Object.keys\\(docx\\).slice\\(0,5\\).join\\('',''\\)\\);\")",
+      "Bash(NODE_PATH=\"C:\\\\Users\\\\MSI BRAVO\\\\AppData\\\\Roaming\\\\npm\\\\node_modules\" node \"C:\\\\Users\\\\MSI BRAVO\\\\Desktop\\\\create_doc.js\")",
+      "Bash(python scripts/office/validate.py \"C:\\\\Users\\\\MSI BRAVO\\\\Desktop\\\\HomeServiceGo_Final_Documentation.docx\")",
+      "Bash(python scripts/office/unpack.py \"C:\\\\Users\\\\MSI BRAVO\\\\Desktop\\\\HomeServiceGo_Final_Documentation.docx\" \"C:\\\\Users\\\\MSI BRAVO\\\\Desktop\\\\hsg_unpacked\")",
+      "Bash(python -c \":*)",
+      "Bash(python:*)"
     ]
   }
 }
