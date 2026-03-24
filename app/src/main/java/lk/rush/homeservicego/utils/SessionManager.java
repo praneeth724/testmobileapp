@@ -51,6 +51,11 @@ public class SessionManager {
         return pref.getString(KEY_USER_ROLE, "customer");
     }
 
+    public void updateUserName(String name) {
+        editor.putString(KEY_USER_NAME, name);
+        editor.apply();
+    }
+
     // Clear session on logout
     public void logoutUser() {
         editor.clear();

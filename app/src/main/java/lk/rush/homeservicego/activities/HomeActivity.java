@@ -37,14 +37,6 @@ public class HomeActivity extends AppCompatActivity {
 
         sessionManager = new SessionManager(this);
 
-        // Show user's first name in the header
-        String fullName = sessionManager.getUserName();
-        if (fullName != null && !fullName.isEmpty()) {
-            // Use only the first name for a friendly greeting
-            String firstName = fullName.split(" ")[0];
-            tvTitle.setText("Hi, " + firstName + "!");
-        }
-
         cardCleaning.setOnClickListener(v -> openServiceList("Cleaning"));
         cardPlumbing.setOnClickListener(v -> openServiceList("Plumbing"));
         cardElectrical.setOnClickListener(v -> openServiceList("Electrical"));
@@ -56,6 +48,8 @@ public class HomeActivity extends AppCompatActivity {
         btnProfile.setOnClickListener(v ->
                 startActivity(new Intent(HomeActivity.this, ProfileActivity.class)));
 
+        updateGreeting();
+
         btnLogout.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
             sessionManager.logoutUser();
@@ -63,6 +57,20 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateGreeting();
+    }
+
+    private void updateGreeting() {
+        String fullName = sessionManager.getUserName();
+        if (fullName != null && !fullName.isEmpty()) {
+            String firstName = fullName.split(" ")[0];
+            tvTitle.setText("Hi, " + firstName + "!");
+        }
     }
 
     private void openServiceList(String category) {

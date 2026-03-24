@@ -2,6 +2,7 @@ package lk.rush.homeservicego.activities;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -26,7 +27,7 @@ public class BookingHistoryActivity extends AppCompatActivity {
     private BookingAdapter adapter;
     private ArrayList<Booking> bookingList;
     private ProgressBar progressBar;
-    private TextView tvEmpty;
+    private LinearLayout layoutEmpty;
 
     private FirebaseFirestore db;
     private SessionManager sessionManager;
@@ -45,7 +46,7 @@ public class BookingHistoryActivity extends AppCompatActivity {
 
         rvBookings  = findViewById(R.id.rvBookings);
         progressBar = findViewById(R.id.progressBar);
-        tvEmpty     = findViewById(R.id.tvEmpty);
+        layoutEmpty = findViewById(R.id.layoutEmpty);
 
         bookingList = new ArrayList<>();
         adapter     = new BookingAdapter(bookingList);
@@ -57,11 +58,11 @@ public class BookingHistoryActivity extends AppCompatActivity {
 
     private void loadMyBookings() {
         progressBar.setVisibility(View.VISIBLE);
+        rvBookings.setVisibility(View.GONE);
+        layoutEmpty.setVisibility(View.GONE);
 
-        // Get the current user's ID from session
         String userId = sessionManager.getUserId();
 
-        // Query only this user's bookings, ordered by newest first
         db.collection("bookings")
                 .whereEqualTo("userId", userId)
                 .get()
@@ -76,11 +77,12 @@ public class BookingHistoryActivity extends AppCompatActivity {
 
                     adapter.notifyDataSetChanged();
 
-                    // Show empty state if no bookings
                     if (bookingList.isEmpty()) {
-                        tvEmpty.setVisibility(View.VISIBLE);
+                        layoutEmpty.setVisibility(View.VISIBLE);
+                        rvBookings.setVisibility(View.GONE);
                     } else {
-                        tvEmpty.setVisibility(View.GONE);
+                        rvBookings.setVisibility(View.VISIBLE);
+                        layoutEmpty.setVisibility(View.GONE);
                     }
                 })
                 .addOnFailureListener(e -> {

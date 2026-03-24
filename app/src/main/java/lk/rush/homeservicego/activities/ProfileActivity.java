@@ -178,6 +178,7 @@ public class ProfileActivity extends AppCompatActivity {
                 .addOnSuccessListener(unused -> {
                     progressBar.setVisibility(View.GONE);
                     btnSave.setEnabled(true);
+                    sessionManager.updateUserName(name);
                     Toast.makeText(this, "Profile updated!", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e -> {
